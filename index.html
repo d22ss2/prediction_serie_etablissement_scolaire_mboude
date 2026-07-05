@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>TP INF232 - Lycée de MBOUDA</title>
+
+<!-- Chart.js pour tous les graphiques -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+
+<style>
+    /* ============================================================
+       STYLE GENERAL - simple et propre, sans framework CSS
+       ============================================================ */
+    * {
+        box-sizing: border-box;
+        font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+        margin: 0;
+        display: flex;
+        background-color: #f4f6f8;
+        color: #222;
+    }
+
+    /* ---------- MENU LATERAL ---------- */
+    #menu {
+        width: 230px;
+        background-color: #1e3a5f;
+        color: white;
+        min-height: 100vh;
+        padding-top: 20px;
+    }
+
+    #menu h2 {
+        text-align: center;
+        font-size: 16px;
+        padding: 0 10px;
+    }
+
+    .bouton-onglet {
+        display: block;
+        width: 100%;
+        padding: 14px 20px;
+        background: none;
+        border: none;
+        color: white;
+        text-align: left;
+        font-size: 15px;
+        cursor: pointer;
+    }
+
+    .bouton-onglet:hover {
+        background-color: #29517d;
+    }
+
+    .bouton-onglet.actif {
+        background-color: #3873ad;
+        font-weight: bold;
+    }
+
+    /* ---------- CONTENU PRINCIPAL ---------- */
+    #contenu {
+        flex: 1;
+        padding: 30px;
+    }
+
+    .onglet {
+        display: none;
+        background: white;
+        padding: 25px;
+        border-radius: 8px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    }
+
+    .onglet.visible {
+        display: block;
+    }
+
+    h1 {
+        margin-top: 0;
+        color: #1e3a5f;
+    }
+
+    .ligne {
+        display: flex;
+        gap: 30px;
+        flex-wrap: wrap;
+    }
+
+    .carte {
+        background-color: #f0f4f8;
+        padding: 15px 20px;
+        border-radius: 6px;
+        min-width: 140px;
+        text-align: center;
+    }
+
+    .carte .valeur {
+        font-size: 22px;
+        font-weight: bold;
+        color: #1e3a5f;
+    }
+
+    input, button {
+        padding: 8px 12px;
+        font-size: 14px;
+        margin: 5px 0;
+    }
+
+    button {
+        background-color: #1e3a5f;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background-color: #3873ad;
+    }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 15px;
+        font-size: 13px;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 6px 10px;
+        text-align: center;
+    }
+
+    th {
+        background-color: #1e3a5f;
+        color: white;
+    }
+
+    #tableau-eleves-conteneur {
+        max-height: 350px;
+        overflow-y: auto;
+    }
+
+    canvas {
+        max-width: 100%;
+        margin-top: 15px;
+    }
+
+    .avertissement {
+        background-color: #fff3cd;
+        border: 1px solid #ffdd57;
+        padding: 10px;
+        border-radius: 4px;
+        margin-top: 10px;
+    }
+
+    .resultat-encadre {
+        background-color: #e8f4ea;
+        border: 1px solid #a8d5b0;
+        padding: 12px;
+        border-radius: 6px;
+        margin-top: 15px;
+        font-weight: bold;
+    }
+
+    .interpretation {
+        background-color: #eef2f7;
+        padding: 12px;
+        border-radius: 6px;
+        margin-top: 15px;
+    }
+
+    .boxplot-ligne {
+        display: flex;
+        justify-content: space-between;
+        max-width: 500px;
+        margin-top: 10px;
+    }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     MENU LATERAL
+     ============================================================ -->
+<div id="menu">
+    <h2>Lycée de MBOUDA<br>TP INF232</h2>
+    <button class="bouton-onglet actif" onclick="changerOnglet('accueil')">Accueil</button>
+    <button class="bouton-onglet" onclick="changerOnglet('descriptive')">Analyse descriptive</button>
+    <button class="bouton-onglet" onclick="changerOnglet('bivariee')">Analyse bivariée</button>
+    <button class="bouton-onglet" onclick="changerOnglet('cluster')"> Classification non supervisée</button>
+    <button class="bouton-onglet" onclick="changerOnglet('supervisee')">Classification supervisée</button>
+</div>
+
+<!-- ============================================================
+     CONTENU PRINCIPAL
+     ============================================================ -->
+<div id="contenu">
+
+    <!-- ---------------- ONGLET ACCUEIL ---------------- -->
+    <div id="onglet-accueil" class="onglet visible">
+        <h1>Accueil - Génération des données</h1>
+        <p>Saisissez le nom complet du chef de groupe. Les 200 élèves seront générés automatiquement.</p>
+
+        <input type="text" id="champ-nom" placeholder="Nom complet du chef de groupe">
+        <button onclick="genererDonnees()">Générer les données</button>
+
+        <div id="resultat-generation"></div>
+
+        <h3>Aperçu des données</h3>
+        <div id="tableau-eleves-conteneur">
+            <table id="tableau-eleves"></table>
+        </div>
+    </div>
+
+    <!-- ---------------- ONGLET ANALYSE DESCRIPTIVE ---------------- -->
+    <div id="onglet-descriptive" class="onglet">
+        <h1>Analyse descriptive - Note de Mathématiques</h1>
+        <button onclick="chargerAnalyseDescriptive()">Calculer les statistiques</button>
+
+        <div class="ligne" id="cartes-statistiques"></div>
+
+        <div class="ligne">
+            <div>
+                <h3>Histogramme</h3>
+                <canvas id="graphique-histogramme" width="400" height="300"></canvas>
+            </div>
+            <div>
+                <h3>Boxplot (résumé en 5 nombres)</h3>
+                <canvas id="graphique-boxplot" width="400" height="300"></canvas>
+            </div>
+        </div>
+
+        <div class="interpretation" id="interpretation-descriptive"></div>
+    </div>
+
+    <!-- ---------------- ONGLET ANALYSE BIVARIEE ---------------- -->
+    <div id="onglet-bivariee" class="onglet">
+        <h1>Analyse bivariée - Heures de travail vs Note</h1>
+        <button onclick="chargerAnalyseBivariee()">Calculer la relation</button>
+
+        <div class="ligne" id="cartes-bivariee"></div>
+
+        <canvas id="graphique-nuage" width="500" height="350"></canvas>
+
+        <h3>Simulateur de note</h3>
+        <p>Entrez un nombre d'heures de travail pour estimer la note correspondante :</p>
+        <input type="number" id="champ-heures-simulateur" placeholder="Nombre d'heures">
+        <button onclick="simulerNote()">Estimer la note</button>
+        <div id="resultat-simulateur"></div>
+    </div>
+
+    <!-- ---------------- ONGLET CLASSIFICATION NON SUPERVISEE ---------------- -->
+    <div id="onglet-cluster" class="onglet">
+        <h1>Classification non supervisée (KMeans)</h1>
+        <button onclick="chargerClustering()">Lancer le clustering</button>
+
+        <p id="info-clustering"></p>
+
+        <canvas id="graphique-cluster" width="500" height="350"></canvas>
+
+        <h3>Description des groupes</h3>
+        <div id="description-groupes"></div>
+    </div>
+
+    <!-- ---------------- ONGLET CLASSIFICATION SUPERVISEE ---------------- -->
+    <div id="onglet-supervisee" class="onglet">
+        <h1>Classification supervisée</h1>
+        <p>Renseignez la note et les heures de travail d'un élève pour prédire son orientation.</p>
+
+        <input type="number" id="champ-note-predire" placeholder="Note de mathématiques">
+        <input type="number" id="champ-heures-predire" placeholder="Heures de travail">
+        <button onclick="predireOrientation()">Prédire l'orientation</button>
+
+        <div id="resultat-prediction"></div>
+
+        <h3>Performance du modèle (sur les données de test)</h3>
+        <div class="ligne" id="cartes-performance"></div>
+
+        <h3>Matrice de confusion</h3>
+        <table id="tableau-matrice"></table>
+
+        <p><em>Rappel : la décision finale d'orientation appartient toujours au conseil de classe.</em></p>
+    </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
